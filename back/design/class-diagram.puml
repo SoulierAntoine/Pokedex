@@ -1,0 +1,116 @@
+@startuml
+
+
+namespace Interface #d8ead2 {
+
+  class FindPokemonController {
+    -readonly queryBus: QueryBus
+    +findPokemonPaged(): Promise<FindPokemonPagedResponse[]>
+  }
+
+  namespace Queries #f5ac50 {
+    class FindPokemonPagedQuery {
+      +readonly limit?: number
+      +readonly offset?: number
+    }
+
+    abstract class QueryHandlerBase {
+      +{abstract} handle(): Promise<Result<unknown>>
+      +execute(): Promise<Result<unknown>>
+    }
+
+    FindPokemonPagedQuery --|> QueryHandlerBase
+  }
+
+  namespace DTO #7c858c {
+    class FindPokemonPagedRequest {
+      +limit?: number
+      +offset?: number
+    }
+
+    class PokemonResponse {
+      +id: ID<number>
+      +name: string
+      +imageUrl: string
+    }
+
+    class FindPokemonPagedResponse {
+      +total: number
+      +pokemonList: PokemonResponse[]
+    }
+
+    FindPokemonPagedResponse o-- PokemonResponse : contain several >
+  }
+
+}
+
+
+namespace Infrastructure #fcddb3 {
+
+  interface PokemonAdapterPort {
+    findPokemonPaged(query: FindPokemonPagedQuery): Promise<PokemonEntity[]>
+  }
+
+  class PokemonAdapter {
+    httpClient
+    mapper: PokemonApiMapper
+    findPokemonPaged(query: FindPokemonPagedQuery): Promise<PokemonEntity[]>
+  }
+
+
+  abstract class PokemonApiMapper {
+    toDomainEntity(entity: any): PokemonEntity
+  }
+
+  note left of PokemonApiMapper::toDomainEntity
+    Map response from external API
+  end note
+
+  PokemonAdapter *-- PokemonApiMapper
+  PokemonAdapterPort <|-- PokemonAdapter
+
+}
+
+
+namespace Domain #746da8 {
+
+  abstract class Entity {
+    -id: number
+  }
+
+  class PokemonEntity {
+    +name: string
+    +imageUrl: string
+    +type: Type
+  }
+
+  class PokemonListAggregate {
+    +total: number
+    +pokemonList: PokemonEntity[]
+  }
+
+  abstract class ID<T> {
+    + equals(): boolean
+  }
+
+  abstract class ValueObject<T> {
+    + equals(): boolean
+  }
+
+  interface TypeProps {
+    +slot: number
+    +name: string
+  }
+
+  class Type<TypeProps> {}
+
+  PokemonEntity *-- Type: Has 1 or more >
+  ID --|> ValueObject
+  PokemonEntity --|> Entity
+  PokemonListAggregate --|> Entity
+  PokemonListAggregate o-- PokemonEntity : contain several >
+  Type --|> ValueObject
+}
+
+
+@enduml

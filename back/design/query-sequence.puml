@@ -1,0 +1,15 @@
+@startuml
+
+DTO->HTTPControllers: request
+HTTPControllers->HTTPControllers: map to query
+HTTPControllers->Query: send bus
+Query->Repository: call
+Repository->ExternalAPI: fetch with http client
+Repository<-ExternalAPI
+Repository->Repository: map response to entity
+Repository->Query: return entity
+Query->HTTPControllers: return entity
+HTTPControllers->HTTPControllers: map entity to response
+HTTPControllers->DTO: respond
+
+@enduml
